@@ -4,10 +4,14 @@ filePath = sys.argv[1]
 splitBoardAt = [0,50,100,150,200,250,300,350,400,450]
 
 with open(filePath, 'r') as myfile:
-    sgfData = myfile.read().replace("\n", "").split(";")[1:-1]
+    sgfData = myfile.read().replace("\n", "").split(";")[1:]
+    sgfData[-1] = sgfData[-1][:-1]
 
 header = sgfData[0]
 moves = sgfData[1:]
+
+# print(header)
+# print(moves)
 
 
 def get_tag_from_header(tag):
@@ -20,11 +24,14 @@ def get_tag_from_header(tag):
     return ""
 
 def extractCoordinatesFromMove(move):
-    firstCoordinate = move[2]
-    secondCoordinate = ord(move[3])-96
-    if ord(move[2]) >= ord("i"):
-        firstCoordinate = chr(ord(firstCoordinate) + 1)
-    return firstCoordinate, secondCoordinate
+    try:
+        firstCoordinate = move[2]
+        secondCoordinate = ord(move[3])-96
+        if ord(move[2]) >= ord("i"):
+            firstCoordinate = chr(ord(firstCoordinate) + 1)
+        return firstCoordinate, secondCoordinate
+    except IndexError:
+        return -1,-1
 
 def generateTitle():
     out = parsedHeader["event"] + "\\\\"
@@ -88,14 +95,15 @@ for i in range(len(splitBoardAt)-1):
     # new moves
     for j in range(nextSplit-currentSplit):
         firstCoordinate, secondCoordinate = extractCoordinatesFromMove(moves[currentSplit+j])
-        outText += "\\move{%s}{%d}  " % (firstCoordinate, parsedHeader["boardSize"] - secondCoordinate + 1)
-        if j % 5 == 4:
-            outText += "\n\t"
-        elif parsedHeader["boardSize"] - secondCoordinate < 9: # nice spacing
-            outText += " "
+        if not (firstCoordinate == -1 or secondCoordinate == -1):
+            outText += "\\move{%s}{%d}  " % (firstCoordinate, parsedHeader["boardSize"] - secondCoordinate + 1)
+            if j % 5 == 4:
+                outText += "\n\t"
+            elif parsedHeader["boardSize"] - secondCoordinate < 9: # nice spacing
+                outText += " "
 
         # was it the last move?
-        if currentSplit+j == len(moves) -1:
+        if currentSplit+j == len(moves)-1:
             finished = True
             break
 

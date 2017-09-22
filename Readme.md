@@ -19,8 +19,9 @@ To run kifugen you will need:
 # Usage
 The basic usage is `kifugen <file> [options]` where file is the `.sgf` file and options are:
 
-| Option         | Meaning                       |
-| :------------- | :---------------------------- |
-| -se n          | "split every" n moves         |
-| -c             | compile to pdf                |
-| -o             | open the pdf after compilation|
+| Option         | Meaning                       | Default   |
+| :------------- | :---------------------------- | :-------- |
+| -se n          | "split every" n moves         | 50        |
+| -cn            | continuous numbering          | false     |
+| -c             | compile to pdf                | false     |
+| -o             | open the pdf after compilation| false     |

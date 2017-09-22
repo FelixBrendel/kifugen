@@ -7,6 +7,7 @@ parser = argparse.ArgumentParser(description='Convert sgf go records into a kifu
 
 parser.add_argument('sgfFile')
 parser.add_argument('-se', "--splitevery", dest="step", type=int, default=50)
+parser.add_argument('-cn', "--continuousNumbers", action="store_true", dest="cn", default=False)
 parser.add_argument('-c', "--compile", action="store_true", dest="c", default=False)
 parser.add_argument('-o', "--open", action="store_true", dest="o", default=False)
 
@@ -65,7 +66,7 @@ def generate_moves():
         currentSplit = splitBoardAt[i]
         nextSplit = splitBoardAt[i+1]
 
-        outText.extend(["\n\\setcounter{gomove}{0}\n", "\\begin{psgoboard}\n\t"])
+        outText.append("\\begin{psgoboard}\n\t")
 
         # old moves
         for j in range(currentSplit):
@@ -95,6 +96,8 @@ def generate_moves():
         outText.append("\n\\end{psgoboard}\n")
         if finished:
             break
+        elif not args.cn:
+            outText.append("\n\\setcounter{gomove}{0}\n")
 
     return "".join(outText)
 
@@ -112,31 +115,43 @@ parsedHeader = {
 }
 
 
-title = generate_title()
+# title = generate_title()
+event = parsedHeader["event"]
 date = parsedHeader["date"]
-moves = generate_moves()
 result = parsedHeader["result"]
+playerWhite = parsedHeader["playerWhite"]
+playerBlack = parsedHeader["playerBlack"]
+moves = generate_moves()
 
 outText = f"""
 \\documentclass[a4paper]{{article}}
 \\usepackage{{psgo}}
 \\usepackage[ngerman]{{babel}}
 \\usepackage[margin=2cm,nohead]{{geometry}}
+\\usepackage{{tabularx}}
+
+\\newcolumntype{{R}}{{>{{\\raggedleft\\arraybackslash}}X}}
 
 \\setgounit{{0.5cm}}
-
-\\author{{}}
-\\title{{{title}}}
-\\date{{{date}}}
+\\setcounter{{gomove}}{{0}}
 
 \\begin{{document}}
-\\maketitle
-\\vspace{{3.5cm}}
+\\sffamily
+\\def\\arraystretch{{2}}
 \\begin{{center}}
+    \\vspace*{{1cm}}
+    {{\\Huge {event} \\par}}
+	\\vspace{{1cm}}
+	{{\\huge {date} \\par}}
+	\\vspace{{2cm}}
+	\\begin{{tabularx}}{{\\textwidth}}{{ R | c | X }}
+    \\hline
+    \\stone{{black}} {playerBlack} & \\textbf{{{result}}} & {playerWhite} \\stone{{white}} \\\\\\hline
+     & 7.5 komi &  \\\\\\hline
+  \\end{{tabularx}}
+  \\vspace{{3cm}}
 
 {moves}
-
-\\textbf{{{result}}}
 
 \\end{{center}}
 \\end{{document}}

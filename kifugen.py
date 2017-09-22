@@ -2,6 +2,7 @@ import argparse
 import os
 import sys
 from subprocess import check_call, DEVNULL, STDOUT, CalledProcessError
+from shutil import copyfile, rmtree
 
 parser = argparse.ArgumentParser(description='Convert sgf go records into a kifu format.')
 
@@ -104,7 +105,7 @@ def generate_moves():
 parsedHeader = {
     "event"       : get_tag_from_header("EV"),
     "gameName"    : get_tag_from_header("GN"),
-    "date"        : get_tag_from_header("RD"),
+    "date"        : get_tag_from_header("DT"),
     "boardSize"   : int(get_tag_from_header("SZ")),
     "playerBlack" : get_tag_from_header("PB"),
     "playerWhite" : get_tag_from_header("PW"),
@@ -119,8 +120,13 @@ parsedHeader = {
 event = parsedHeader["event"]
 date = parsedHeader["date"]
 result = parsedHeader["result"]
+komi = parsedHeader["komi"]
 playerWhite = parsedHeader["playerWhite"]
 playerBlack = parsedHeader["playerBlack"]
+if parsedHeader["rankBlack"] != "":
+    playerBlack += f" ({parsedHeader['rankBlack']})"
+if parsedHeader["rankWhite"] != "":
+    playerWhite += f" ({parsedHeader['rankWhite']})"
 moves = generate_moves()
 
 outText = f"""
@@ -147,7 +153,7 @@ outText = f"""
 	\\begin{{tabularx}}{{\\textwidth}}{{ R | c | X }}
     \\hline
     \\stone{{black}} {playerBlack} & \\textbf{{{result}}} & {playerWhite} \\stone{{white}} \\\\\\hline
-     & 7.5 komi &  \\\\\\hline
+     & {komi} Komi &  \\\\\\hline
   \\end{{tabularx}}
   \\vspace{{3cm}}
 
@@ -163,11 +169,19 @@ with open(f"{fileBase}.tex", 'w') as outFile:
 # should be compiled to pdf?
 if args.c:
     try:
-        check_call(['latex',  f"{fileBase}.tex"], stdout=DEVNULL, stderr=STDOUT)
-        check_call(['dvips',  f"{fileBase}.dvi", "-P", "pdf"], stdout=DEVNULL, stderr=STDOUT)
-        check_call(['ps2pdf', f"{fileBase}.ps"],  stdout=DEVNULL, stderr=STDOUT)
+        os.makedirs(os.path.dirname(f"{fileBase}/"), exist_ok=True)
+        copyfile(f"{fileBase}.tex", f"{fileBase}/temp.tex")
+        os.remove(f"{fileBase}.tex") # poor mans `move` that works on win and linux
+        check_call(['latex',  f"temp.tex"],
+            stdout=DEVNULL, stderr=STDOUT, cwd=f'{fileBase}')
+        check_call(['dvips',  f"temp.dvi", "-P", "pdf"],
+            stdout=DEVNULL, stderr=STDOUT, cwd=f'{fileBase}')
+        check_call(['ps2pdf', f"temp.ps"],
+            stdout=DEVNULL, stderr=STDOUT, cwd=f'{fileBase}')
     except CalledProcessError:
         print("error")
     else:
+        copyfile(f"{fileBase}/temp.pdf", f"{fileBase}.pdf")
+        rmtree(f"{fileBase}/")
         if args.o:
             os.system(f'"{fileBase}.pdf"')

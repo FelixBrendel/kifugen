@@ -1,2 +1,7 @@
 *.sgf
 *.tex
+*.aux
+*.dvi
+*.log
+*.ps
+*.pdf

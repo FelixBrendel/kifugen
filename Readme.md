@@ -8,8 +8,10 @@ be easily compiled into a pdf file.
 
 # Requirements
 
-To run kifugen you will need:
+To to produce the `tex` file you need:
 - Python 3.6
+
+If you want to compile it as a `pdf` you also need:
 - A latex distribution with:
     - `latex`
     - `dvips`
@@ -21,7 +23,10 @@ The basic usage is `kifugen <file> [options]` where file is the `.sgf` file and 
 
 | Option         | Meaning                       | Default   |
 | :------------- | :---------------------------- | :-------- |
-| -se n          | "split every" n moves         | 50        |
-| -cn            | continuous numbering          | false     |
-| -c             | compile to pdf                | false     |
-| -o             | open the pdf after compilation| false     |
+| -se n          | start new board every n moves | 50        |
+
+| Flags          | Meaning                       |
+| :------------- | :---------------------------- |
+| -cn            | continuous numbering          |
+| -t             | produce `tex` file only       |
+| -o             | open the pdf after compilation|

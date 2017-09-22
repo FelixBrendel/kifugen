@@ -9,7 +9,7 @@ parser = argparse.ArgumentParser(description='Convert sgf go records into a kifu
 parser.add_argument('sgfFile')
 parser.add_argument('-se', "--splitevery", dest="step", type=int, default=50)
 parser.add_argument('-cn', "--continuousNumbers", action="store_true", dest="cn", default=False)
-parser.add_argument('-c', "--compile", action="store_true", dest="c", default=False)
+parser.add_argument('-t', "--texOnly", action="store_true", dest="t", default=False)
 parser.add_argument('-o', "--open", action="store_true", dest="o", default=False)
 
 args = parser.parse_args(sys.argv[1:])
@@ -24,6 +24,13 @@ with open(filePath, 'r') as myfile:
 
 header = sgfData[0]
 moves = sgfData[1:]
+
+def format_date(date):
+    months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+    ds = date.split("-") # year month day
+    ds.reverse()
+    ds[1] = months[int(ds[1])-1]
+    return " ".join(ds)
 
 def get_tag_from_header(tag):
     eventIdxStart = header.lower().find(f"{tag.lower()}[")
@@ -118,7 +125,8 @@ parsedHeader = {
 
 # title = generate_title()
 event = parsedHeader["event"]
-date = parsedHeader["date"]
+gameName = parsedHeader["gameName"]
+date = format_date(parsedHeader["date"])
 result = parsedHeader["result"]
 komi = parsedHeader["komi"]
 playerWhite = parsedHeader["playerWhite"]
@@ -147,8 +155,10 @@ outText = f"""
 \\begin{{center}}
     \\vspace*{{1cm}}
     {{\\Huge {event} \\par}}
-	\\vspace{{1cm}}
-	{{\\huge {date} \\par}}
+	\\vspace{{0.6cm}}
+    {{\\huge {gameName} \\par}}
+	\\vspace{{0.6cm}}
+	{{\\Large {date} \\par}}
 	\\vspace{{2cm}}
 	\\begin{{tabularx}}{{\\textwidth}}{{ R | c | X }}
     \\hline
@@ -167,7 +177,7 @@ with open(f"{fileBase}.tex", 'w') as outFile:
     outFile.write(outText)
 
 # should be compiled to pdf?
-if args.c:
+if not args.t:
     try:
         os.makedirs(os.path.dirname(f"{fileBase}/"), exist_ok=True)
         copyfile(f"{fileBase}.tex", f"{fileBase}/temp.tex")
@@ -183,5 +193,6 @@ if args.c:
     else:
         copyfile(f"{fileBase}/temp.pdf", f"{fileBase}.pdf")
         rmtree(f"{fileBase}/")
+        # hould output be opened?
         if args.o:
             os.system(f'"{fileBase}.pdf"')

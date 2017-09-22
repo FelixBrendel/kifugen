@@ -1,7 +1,19 @@
 import sys
+import os
+import subprocess
+import argparse
 
-filePath = sys.argv[1]
-splitBoardAt = [0,50,100,150,200,250,300,350,400,450]
+parser = argparse.ArgumentParser(description='Convert sgf go records into a kifu format.')
+
+parser.add_argument('sgfFile')
+parser.add_argument('-se', "--splitevery", dest="step", type=int, default=50)
+parser.add_argument('-c', "--compile", action="store_true", dest="c", default=False)
+parser.add_argument('-o', "--open", action="store_true", dest="o", default=False)
+
+args = parser.parse_args(sys.argv[1:])
+
+filePath = args.sgfFile
+splitBoardAt = [x for x in range(0, 400, args.step)]
 
 with open(filePath, 'r') as myfile:
     sgfData = myfile.read().replace("\n", "").split(";")[1:]
@@ -9,10 +21,6 @@ with open(filePath, 'r') as myfile:
 
 header = sgfData[0]
 moves = sgfData[1:]
-
-# print(header)
-# print(moves)
-
 
 def get_tag_from_header(tag):
     eventIdxStart = header.lower().find(tag.lower() + "[")
@@ -34,7 +42,9 @@ def extractCoordinatesFromMove(move):
         return -1,-1
 
 def generateTitle():
-    out = parsedHeader["event"] + "\\\\"
+    out = ""
+    if parsedHeader["event"] != "":
+        out+=parsedHeader["event"] + "\\\\"
     out += parsedHeader["playerBlack"]
     if parsedHeader["rankBlack"] != "":
         out += "[" + parsedHeader["rankBlack"] + "]"
@@ -118,6 +128,18 @@ outText += """
 \\end{document}
 """ % parsedHeader["result"]
 
-newFileName = ".".join(filePath.split(".")[:-1]) + ".tex"
-with open(newFileName, 'w') as outFile:
+outFileBaseName = ".".join(filePath.split(".")[:-1])
+with open(outFileBaseName+ ".tex", 'w') as outFile:
     outFile.write(outText)
+
+# should be compiled to pdf?
+if args.c:
+    try:
+        subprocess.check_call(['latex', outFileBaseName + ".tex"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        subprocess.check_call(['dvips', "-P", "pdf", outFileBaseName + ".dvi"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        subprocess.check_call(['ps2pdf', outFileBaseName + ".ps"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError:
+        print("error")
+    else:
+        if args.o:
+            os.system('"%s.pdf"' % outFileBaseName)

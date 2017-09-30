@@ -3,6 +3,9 @@ import os
 import sys
 from subprocess import check_call, DEVNULL, STDOUT, CalledProcessError
 from shutil import copyfile, rmtree
+from pprint import pprint
+
+import simpleGoBoard
 
 parser = argparse.ArgumentParser(description='Convert sgf go records into a kifu format.')
 
@@ -26,6 +29,8 @@ header = sgfData[0]
 moves = sgfData[1:]
 
 def format_date(date):
+    if date == "":
+        return ""
     months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
     ds = date.split("-") # year month day
     ds.reverse()
@@ -67,45 +72,28 @@ def generate_title():
 
     return "".join(out)
 
-def generate_moves():
-    finished = False
+
+def init_simpleGoBoard():
+    for move in moves:
+        if len(move) == 5:
+            coordinates = (ord(move[2].lower())-ord("a")+1, parsedHeader["boardSize"]-ord(move[3].lower())+ord("a"))
+            if move[0].lower() == "w":
+                simpleGoBoard.whiteMoves.append(coordinates)
+            elif move[0].lower() == "b":
+                simpleGoBoard.blackMoves.append(coordinates)
+
+
+def generate_boards():
+    init_simpleGoBoard()
     outText = []
     for i in range(len(splitBoardAt)-1):
         currentSplit = splitBoardAt[i]
         nextSplit = splitBoardAt[i+1]
 
-        outText.append("\\begin{psgoboard}\n\t")
-
-        # old moves
-        for j in range(currentSplit):
-            firstCoordinate, secondCoordinate = extract_coordinates(moves[j])
-            if not (firstCoordinate == -1 or secondCoordinate == -1):
-                outText.append(f"\\move*{{{firstCoordinate}}}{{{secondCoordinate}}} ")
-                if j % 5 == 4:
-                    outText.append("\n\t")
-                elif secondCoordinate < 10: # nice spacing
-                    outText.append(" ")
-
-        # new moves
-        for j in range(nextSplit-currentSplit):
-            firstCoordinate, secondCoordinate = extract_coordinates(moves[currentSplit+j])
-            if not (firstCoordinate == -1 or secondCoordinate == -1):
-                outText.append(f"\\move{{{firstCoordinate}}}{{{secondCoordinate}}}  ")
-                if j % 5 == 4:
-                    outText.append("\n\t")
-                elif secondCoordinate < 10: # nice spacing
-                    outText.append(" ")
-
-            # was it the last move?
-            if currentSplit+j == len(moves)-1:
-                finished = True
-                break
-
-        outText.append("\n\\end{psgoboard}\n")
+        board, finished = simpleGoBoard.produce_latex(currentSplit, nextSplit, args.cn)
+        outText.extend(board)
         if finished:
             break
-        elif not args.cn:
-            outText.append("\n\\setcounter{gomove}{0}\n")
 
     return "".join(outText)
 
@@ -135,7 +123,7 @@ if parsedHeader["rankBlack"] != "":
     playerBlack += f" ({parsedHeader['rankBlack']})"
 if parsedHeader["rankWhite"] != "":
     playerWhite += f" ({parsedHeader['rankWhite']})"
-moves = generate_moves()
+boards = generate_boards()
 
 outText = f"""
 \\documentclass[a4paper]{{article}}
@@ -167,7 +155,7 @@ outText = f"""
   \\end{{tabularx}}
   \\vspace{{3cm}}
 
-{moves}
+{boards}
 
 \\end{{center}}
 \\end{{document}}
@@ -195,4 +183,4 @@ if not args.t:
         rmtree(f"{fileBase}/")
         # hould output be opened?
         if args.o:
-            os.system(f'"{fileBase}.pdf"')
+            os.startfile(f'"{fileBase}.pdf"')

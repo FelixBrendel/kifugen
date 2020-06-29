@@ -1,3 +1,6 @@
+### kleiner commit test
+
+
 import argparse
 import os
 import sys
@@ -143,12 +146,12 @@ outText = f"""
 \\begin{{center}}
     \\vspace*{{1cm}}
     {{\\Huge {event} \\par}}
-	\\vspace{{0.6cm}}
+        \\vspace{{0.6cm}}
     {{\\huge {gameName} \\par}}
-	\\vspace{{0.6cm}}
-	{{\\Large {date} \\par}}
-	\\vspace{{2cm}}
-	\\begin{{tabularx}}{{\\textwidth}}{{ R | c | X }}
+        \\vspace{{0.6cm}}
+        {{\\Large {date} \\par}}
+        \\vspace{{2cm}}
+        \\begin{{tabularx}}{{\\textwidth}}{{ R | c | X }}
     \\hline
     \\stone{{black}} {playerBlack} & \\textbf{{{result}}} & {playerWhite} \\stone{{white}} \\\\\\hline
      & {komi} Komi &  \\\\\\hline

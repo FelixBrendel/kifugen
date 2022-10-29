@@ -9,6 +9,18 @@ board = []
 blackGroups = []
 whiteGroups = []
 
+def lastIndex(list, item):
+    finalIndex = -1
+    try:
+        while True:
+            finalIndex = list.index(item, finalIndex+1)
+    except ValueError:
+        if finalIndex == -1:
+            raise ValueError
+        else:
+            return finalIndex
+
+
 def get_neighbouring_coordinates(point):
     neighbours = []
     potentialNeighbours = [
@@ -158,6 +170,10 @@ def produce_latex(fromMove, toMove, continousCounting):
     latexList = ["\\begin{psgoboard}\n\t"]
     latexList.extend(get_latex_at_move(fromMove))
 
+    playedMoves = []
+    removedMoves = []
+    removedMoveIndices = []
+
     finished = False
     moveCount = 1
     if continousCounting:
@@ -181,6 +197,12 @@ def produce_latex(fromMove, toMove, continousCounting):
 
         x, y = moves[i//2]
 
+        if (x, y) in playedMoves:
+            removedMoves.append((x,y))
+            removedMoveIndices.append(1+lastIndex(playedMoves, (x,y)))
+
+        playedMoves.append((x,y))
+
         # skip the 'i' coordinate
         if ord("a")+x-1 < ord("i"):
             firstCoordinate = chr(ord("a")+x-1)
@@ -195,6 +217,25 @@ def produce_latex(fromMove, toMove, continousCounting):
         finished = True
 
     latexList.append("\n\\end{psgoboard}\n")
+    # Add text for moves that have been replaced
+    if len(removedMoves) > 0:
+        latexList.append("\n")
+        for (idx, move) in zip(removedMoveIndices, removedMoves):
+            if idx % 2 == 0:
+                replacedstone = f"\\stone[{{{idx}}}]{{white}}"
+            else:
+                replacedstone = f"\\stone[{{{idx}}}]{{black}}"
+
+            finalLabel = 1+lastIndex(playedMoves, move)
+            if finalLabel % 2 == 0:
+                finalstone = f"\\stone[{{{finalLabel}}}]{{white}}"
+            else:
+                finalstone = f"\\stone[{{{finalLabel}}}]{{black}}"
+
+            latexList.append(f"{replacedstone} at {finalstone}\,,\,")
+
+        latexList.append("\n")
+
     return latexList, finished
 
 
